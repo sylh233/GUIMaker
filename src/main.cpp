@@ -1,6 +1,8 @@
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include <string>
+#include <gui.h>
+
 // 常量
 const int Ww = 1600;
 const int Wh = 900;
@@ -11,15 +13,10 @@ std::string Path;
 std::string ttfPath;
 std::string mainFontName;
 std::string bigFontName;
-// 结构体
-struct Point {
-	double x, y;
-};
-typedef struct Point Point;
 // 函数原型
 int init();
-void event(SDL_Event *event);
-SDL_FRect genRect(Point p, double width, size_t length);
+void event(SDL_Event &event);
+SDL_FRect genRect(ds::Point p, double width, size_t length);
 SDL_Texture *getTexture(std::string fontName, SDL_Color color, std::string text,
                         size_t size = 20);
 // 场景类
@@ -44,7 +41,7 @@ int main(int argc, char *argv[]) {
 
 	//
 	SDL_Event eve;
-	event(&eve);
+	event(eve);
 	//
 	SDL_DestroyRenderer(rend);
 	SDL_DestroyWindow(win);
@@ -54,19 +51,19 @@ int main(int argc, char *argv[]) {
 	return 0;
 }
 
-void event(SDL_Event *event) {
+void event(SDL_Event &event) {
 	bool quitFlag = 1;
 	double mx, my;
 	while (quitFlag) {
-		while (SDL_PollEvent(event)) {
-			switch (event->type) {
+		while (SDL_PollEvent(&event)) {
+			switch (event.type) {
 			case SDL_EVENT_QUIT:
 				quitFlag = 0;
 				break;
 			case SDL_EVENT_MOUSE_MOTION:
-				SDL_Log("%lf,%lf\n", event->motion.x, event->motion.y);
-				mx = event->motion.x;
-				my = event->motion.y;
+				SDL_Log("%lf,%lf\n", event.motion.x, event.motion.y);
+				mx = event.motion.x;
+				my = event.motion.y;
 				break;
 			default:
 				break;
@@ -83,7 +80,7 @@ void event(SDL_Event *event) {
 	}
 }
 
-SDL_FRect genRect(Point p, double w, size_t l) {
+SDL_FRect genRect(ds::Point p, double w, size_t l) {
 	SDL_FRect r;
 	r.x = p.x;
 	r.y = p.y;
@@ -141,7 +138,7 @@ SDL_Texture *getTexture(std::string fn, SDL_Color c, std::string t, size_t s) {
 
 void state1(double x, double y) {
 	std::string text = "Hello 世界";
-	Point p{x, y};
+	ds::Point p{x, y};
 	SDL_FRect r1 = genRect(p, 200, text.size());
 	SDL_Color c = {0xff, 0x00, 0x00, 0xff};
 	SDL_Texture *t1 = getTexture(mainFontName, c, text, 28);
