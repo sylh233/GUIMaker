@@ -1,7 +1,8 @@
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
-#include <main.h>
 #include <gui.h>
+#include <instance.h>
+#include <main.h>
 #include <string>
 
 // 常量
@@ -18,6 +19,7 @@ std::string bigFontName;
 
 // 场景类
 void state1(double mouse_x, double mouse_y);
+
 //
 
 //
@@ -57,11 +59,13 @@ void event(SDL_Event &event) {
 			case SDL_EVENT_QUIT:
 				quitFlag = 0;
 				break;
+
 			case SDL_EVENT_MOUSE_MOTION:
-				SDL_Log("%lf,%lf\n", event.motion.x, event.motion.y);
-				mx = event.motion.x;
-				my = event.motion.y;
-				break;
+				instance::mainTree->event(event);
+			// 	//SDL_Log("%lf,%lf\n", event.motion.x, event.motion.y);
+			// 	mx = event.motion.x;
+			// 	my = event.motion.y;
+			// 	break;
 			default:
 				break;
 			}
@@ -69,7 +73,8 @@ void event(SDL_Event &event) {
 		SDL_SetRenderDrawColor(rend, 0x00, 0xff, 0x00, 0xff);
 		SDL_RenderClear(rend);
 		//
-		state1(mx, my);
+		// state1(mx, my);
+		instance::mainTree->run();
 		//
 		SDL_RenderPresent(rend);
 
@@ -106,10 +111,14 @@ int init() {
 	mainFontName = "msyh.ttc";
 	bigFontName = "msyhbd.ttc";
 
+	//
+	instance::initInstance();
+	//
+
 	return 0;
 }
 
-SDL_Texture *getFontTex(std::string fn, SDL_Color c, std::string t, size_t s) {
+SDL_Texture *getFontTex(std::string fn, SDL_Color c, std::string t, float s) {
 	TTF_Font *font = TTF_OpenFont((ttfPath + fn).c_str(), s);
 	if (!font) {
 		SDL_Log("%s", SDL_GetError());

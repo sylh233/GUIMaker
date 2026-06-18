@@ -1,18 +1,28 @@
 #include <SDL3/SDL.h>
 #include <gui.h>
+#include <main.h>
 #include <map>
 #include <string>
 #include <vector>
 
 namespace gui {
 
-stateScene::stateScene(SDL_Renderer *r, getEvent geter) {
+stateScene::stateScene(SDL_Renderer *r, getEvent geter, stateSceneIndex self) {
+	scriptSet.resize(1);
 	eventGeter = geter;
 	rend = r;
+	selfIndex = self;
 }
 
-void stateScene::appendDrawScript(drawScript call, std::string name) {
-	scriptSet[name] = call;
+void stateScene::appendDrawScript(drawScript call, stateIndex i) {
+	while (i >= scriptSet.size()) {
+		scriptSet.resize(scriptSet.size() * 2);
+	}
+	if (script == NULL) {
+		currentStateIndex = i;
+		script = call;
+	}
+	scriptSet[i] = call;
 }
 
 void stateScene::appendFontTex(SDL_Texture *font, std::string name) {
@@ -23,31 +33,63 @@ void stateScene::setTable(stateHandleTable table) {
 	stateTable = std::move(table);
 }
 
-stateIndex stateScene::event(SDL_Event &e) {
-	stateBack sb;
-	SDL_PollEvent(&e);
-	sb = stateTable[currentStateIndex][eventGeter(e)]();
-	
-	
+stateSceneIndex stateScene::event(SDL_Event &e) {
+	if (currentStateIndex >= stateTable.size() ||
+	    eventGeter(e) >= stateTable[currentStateIndex].size() ||
+	    stateTable[currentStateIndex][eventGeter(e)] == NULL) {
+		return selfIndex;
+	}
+	currentStateIndex = stateTable[currentStateIndex][eventGeter(e)]();
+	if (currentStateIndex >= scriptSet.size()) {
+		return currentStateIndex - scriptSet.size();
+	}
+	script = scriptSet[currentStateIndex];
+	return selfIndex;
 }
 
-void stateScene::show() { script(rend, &FontsTex); }
-
-stateTree::stateTree(SDL_Renderer *r, SDL_Event *e, stateScene *s,
-                     std::string name) {
-	rend = r;
-	eve = e;
-	appendState(s, name);
+void stateScene::show() {
+	if (script != NULL) {
+		script(rend, &FontsTex);
+	}
 }
 
-void stateTree::appendState(stateScene *s, std::string name) { tree[name] = s; }
-
-void stateTree::setTable(stateHandleTable table) {
-	stateTable = std::move(table);
+stateScene::~stateScene() {
+	for (auto p = FontsTex.begin(); p != FontsTex.end(); p++) {
+		SDL_DestroyTexture(p->second);
+	}
 }
 
-void stateTree::event(SDL_Event &e) {}
+stateTree::stateTree(stateScene *s, stateSceneIndex i) {
+	tree.resize(1);
+	appendState(s, i);
+	currentState = i;
+}
 
-void stateTree::run() {}
+void stateTree::appendState(stateScene *s, stateSceneIndex i) {
+	while (i >= tree.size()) {
+		tree.resize(tree.size() * 2);
+	}
+	tree[i] = s;
+}
+
+void stateTree::setTable(stateSceneHandleTable table) {
+	stateSceneTable = std::move(table);
+}
+
+void stateTree::event(SDL_Event &eve) {
+	if (currentState >= stateSceneTable.size()) {
+		return;
+	}
+	stateSceneIndex nextIndex = tree[currentState]->event(eve);
+	if (nextIndex >= tree.size()) {
+		return;
+	}
+	if (nextIndex < stateSceneTable[currentState].size()) {
+		stateSceneTable[currentState][nextIndex]();
+	}
+	currentState = nextIndex;
+}
+
+void stateTree::run() { tree[currentState]->show(); }
 
 }; // namespace gui

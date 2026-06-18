@@ -1,15 +1,10 @@
-#ifndef DATASTRUCT
-#define DATASTRUCT
+#ifndef GUI
+#define GUI
 
 #include <SDL3/SDL.h>
 #include <map>
 #include <string>
 #include <vector>
-
-extern SDL_Renderer *rend;
-extern SDL_Event eve;
-extern std::string mainFontName;
-extern std::string bigFontName;
 
 namespace gui {
 struct Point {
@@ -17,57 +12,58 @@ struct Point {
 };
 typedef struct Point Point;
 
-typedef void (*drawScript)(SDL_Renderer *rend,
-                           std::map<std::string, SDL_Texture *> *fontsTex);
+typedef std::map<std::string, SDL_Texture *> fontMap;
+
+// 用于绘制的回调函数
+typedef void (*drawScript)(SDL_Renderer *rend, fontMap *fontsTex);
 
 typedef size_t stateIndex;
+typedef size_t eventIndex;
+typedef size_t stateSceneIndex;
 
-struct stateBack {
-	std::string name;
-	stateIndex index;
-};
-typedef struct stateBack stateBack;
-
-typedef stateBack (*stateHandler)(void);
-
-typedef stateIndex (*getEvent)(SDL_Event &event);
-
+typedef stateIndex (*stateHandler)(void);
 typedef std::vector<std::vector<stateHandler>> stateHandleTable;
+
+typedef eventIndex (*getEvent)(SDL_Event &event);
+
+typedef void (*stateSceneHandler)(void);
+typedef std::vector<std::vector<stateSceneHandler>> stateSceneHandleTable;
 
 class stateScene {
   private:
-	std::map<std::string, SDL_Texture *> FontsTex;
+	fontMap FontsTex;
 	SDL_Renderer *rend;
 	drawScript script;
-	std::map<std::string, drawScript> scriptSet;
+	std::vector<drawScript> scriptSet;
+	std::vector<stateIndex> outStates;
 	getEvent eventGeter;
 	stateHandleTable stateTable;
-	stateIndex currentStateIndex;
+	stateIndex currentStateIndex; // 自身中的状态索引
+	stateSceneIndex selfIndex;    // 自身对于状态树的索引
 
   public:
-	stateScene(SDL_Renderer *rend, getEvent eventGeter);
-	// 使用回调函数的方法绘制界面
-	void appendDrawScript(drawScript callbackDraw, std::string callName);
+	stateScene(SDL_Renderer *rend, getEvent eventGeter,
+	           stateSceneIndex selfIndex);
+	void appendDrawScript(drawScript callbackDraw,
+	                      stateIndex index); // 使用回调函数的方法绘制界面
 	void appendFontTex(SDL_Texture *fontTex, std::string fontName);
-	stateIndex event(SDL_Event &event);
+	stateSceneIndex event(SDL_Event &event);
 	void show();
 	void setTable(stateHandleTable stateTable);
+	~stateScene();
 };
 
 class stateTree {
   private:
-	std::map<std::string, stateScene *> tree;
-	SDL_Renderer *rend;
-	SDL_Event *eve;
-	stateHandleTable stateTable;
-	std::string currentState;
+	std::vector<stateScene *> tree;
+	stateSceneHandleTable stateSceneTable;
+	stateSceneIndex currentState;
 
   public:
-	stateTree(SDL_Renderer *rend, SDL_Event *eve, stateScene *firstState,
-	          std::string stateName);
-	void appendState(stateScene *state, std::string stateName);
-	void setTable(stateHandleTable stateTable);
-	void event();
+	stateTree(stateScene *firstState, stateSceneIndex firstIndex);
+	void appendState(stateScene *state, stateSceneIndex index);
+	void setTable(stateSceneHandleTable stateTable);
+	void event(SDL_Event &event);
 	void run();
 };
 
