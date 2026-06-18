@@ -1,7 +1,8 @@
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
-#include <string>
+#include <main.h>
 #include <gui.h>
+#include <string>
 
 // 常量
 const int Ww = 1600;
@@ -9,16 +10,12 @@ const int Wh = 900;
 // 全局变量
 SDL_Window *win;
 SDL_Renderer *rend;
+SDL_Event eve;
 std::string Path;
 std::string ttfPath;
 std::string mainFontName;
 std::string bigFontName;
-// 函数原型
-int init();
-void event(SDL_Event &event);
-SDL_FRect genRect(ds::Point p, double width, size_t length);
-SDL_Texture *getTexture(std::string fontName, SDL_Color color, std::string text,
-                        size_t size = 20);
+
 // 场景类
 void state1(double mouse_x, double mouse_y);
 //
@@ -40,7 +37,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	//
-	SDL_Event eve;
+
 	event(eve);
 	//
 	SDL_DestroyRenderer(rend);
@@ -80,7 +77,7 @@ void event(SDL_Event &event) {
 	}
 }
 
-SDL_FRect genRect(ds::Point p, double w, size_t l) {
+SDL_FRect genRect(gui::Point p, double w, size_t l) {
 	SDL_FRect r;
 	r.x = p.x;
 	r.y = p.y;
@@ -112,7 +109,7 @@ int init() {
 	return 0;
 }
 
-SDL_Texture *getTexture(std::string fn, SDL_Color c, std::string t, size_t s) {
+SDL_Texture *getFontTex(std::string fn, SDL_Color c, std::string t, size_t s) {
 	TTF_Font *font = TTF_OpenFont((ttfPath + fn).c_str(), s);
 	if (!font) {
 		SDL_Log("%s", SDL_GetError());
@@ -138,10 +135,10 @@ SDL_Texture *getTexture(std::string fn, SDL_Color c, std::string t, size_t s) {
 
 void state1(double x, double y) {
 	std::string text = "Hello 世界";
-	ds::Point p{x, y};
+	gui::Point p{x, y};
 	SDL_FRect r1 = genRect(p, 200, text.size());
 	SDL_Color c = {0xff, 0x00, 0x00, 0xff};
-	SDL_Texture *t1 = getTexture(mainFontName, c, text, 28);
+	SDL_Texture *t1 = getFontTex(mainFontName, c, text, 28);
 	SDL_RenderTexture(rend, t1, 0, &r1);
 	SDL_DestroyTexture(t1);
 }
