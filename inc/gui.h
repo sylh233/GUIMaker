@@ -33,12 +33,13 @@ class stateScene {
   private:
 	fontMap FontsTex;
 	SDL_Renderer *rend;
-	drawScript script;
+	drawScript script = nullptr;
 	std::vector<drawScript> scriptSet;
 	std::vector<stateIndex> outStates;
 	getEvent eventGeter;
 	stateHandleTable stateTable;
 	stateIndex currentStateIndex; // 自身中的状态索引
+	stateIndex mainStateIndex;    // 主状态，决定如何返回
 	stateSceneIndex selfIndex;    // 自身对于状态树的索引
 
   public:

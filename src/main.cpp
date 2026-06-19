@@ -8,6 +8,7 @@
 // 常量
 const int Ww = 1600;
 const int Wh = 900;
+const double TEXTwhRATIO = 2.7;
 // 全局变量
 SDL_Window *win;
 SDL_Renderer *rend;
@@ -39,9 +40,10 @@ int main(int argc, char *argv[]) {
 	}
 
 	//
-
+	SDL_Log("The window COMPLETE!\n");
 	event(eve);
 	//
+	instance::destroyInstance();
 	SDL_DestroyRenderer(rend);
 	SDL_DestroyWindow(win);
 
@@ -52,20 +54,39 @@ int main(int argc, char *argv[]) {
 
 void event(SDL_Event &event) {
 	bool quitFlag = 1;
-	double mx, my;
 	while (quitFlag) {
 		while (SDL_PollEvent(&event)) {
 			switch (event.type) {
 			case SDL_EVENT_QUIT:
 				quitFlag = 0;
 				break;
-
 			case SDL_EVENT_MOUSE_MOTION:
 				instance::mainTree->event(event);
-			// 	//SDL_Log("%lf,%lf\n", event.motion.x, event.motion.y);
-			// 	mx = event.motion.x;
-			// 	my = event.motion.y;
-			// 	break;
+				break;
+			case SDL_EVENT_KEY_DOWN:
+				switch (event.key.key) {
+				case SDLK_ESCAPE:
+					quitFlag = 0;
+					break;
+				default:
+					instance::mainTree->event(event);
+					break;
+				}
+				break;
+			case SDL_EVENT_MOUSE_BUTTON_DOWN:
+				switch (event.button.button) {
+				default:
+					instance::mainTree->event(event);
+					break;
+				}
+				break;
+			case SDL_EVENT_MOUSE_BUTTON_UP:
+				switch (event.button.button) {
+				default:
+					instance::mainTree->event(event);
+					break;
+				}
+				break;
 			default:
 				break;
 			}
@@ -87,7 +108,7 @@ SDL_FRect genRect(gui::Point p, double w, size_t l) {
 	r.x = p.x;
 	r.y = p.y;
 	r.w = w;
-	r.h = w / l * 3.5;
+	r.h = w / l * TEXTwhRATIO;
 	return r;
 }
 
@@ -103,6 +124,7 @@ int init() {
 		SDL_Log("%s", SDL_GetError());
 		return 1;
 	}
+	SDL_SetRenderDrawBlendMode(rend, SDL_BLENDMODE_BLEND);
 
 	Path = SDL_GetBasePath();
 	Path = Path.substr(0, Path.size() - 4);
@@ -150,4 +172,24 @@ void state1(double x, double y) {
 	SDL_Texture *t1 = getFontTex(mainFontName, c, text, 28);
 	SDL_RenderTexture(rend, t1, 0, &r1);
 	SDL_DestroyTexture(t1);
+}
+
+SDL_FRect genRectCenter(gui::Point p, double w, size_t l) {
+	double x = p.x, y = p.y, h = w / l * TEXTwhRATIO;
+	x -= w / 2;
+	y -= h / 2;
+	SDL_FRect r;
+	r.x = x;
+	r.y = y;
+	r.w = w;
+	r.h = h;
+	return r;
+}
+
+bool InRect(SDL_FRect *r, gui::Point p) {
+	if (p.x > r->x && p.x < r->x + r->w && p.y > r->y && p.y < r->y + r->h) {
+		return true;
+	} else {
+		return false;
+	}
 }
