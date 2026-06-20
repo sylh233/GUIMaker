@@ -27,32 +27,33 @@ void initMainRenderer(SDL_Renderer *rend);
 
 void destroyMainRenderer();
 
-enum TEXT_TYPE {
-	TEXT_TYPE_ONLY_LATIN,
-	TEXT_TYPE_HAVE_CHINESE,
-};
 SDL_FRect genRect(gui::Point p, double width, size_t length,
-                  TEXT_TYPE type = TEXT_TYPE_ONLY_LATIN);
+                  double ratio = TextRatio);
 
 SDL_FRect genRectCenter(gui::Point p, double width, size_t length,
-                        TEXT_TYPE type = TEXT_TYPE_ONLY_LATIN);
+                        double ratio = TextRatio);
 
 SDL_Texture *getFontTex(std::string fontName, SDL_Color color, std::string text,
                         float size = 20);
 
 bool InRect(SDL_FRect *rect, gui::Point point);
 
-typedef std::map<std::string, SDL_Texture *> fontMap;
+SDL_Texture *getBMP(std::string bmpName);
+
+void loadWAV(std::string wav_name, SDL_AudioStream *&stream, Uint8 **wav_data,
+             Uint32 *wav_len);
+
+typedef std::map<std::string, SDL_Texture *> texMap;
 
 // 用于绘制的回调函数
-// typedef void (*drawScript)(SDL_Renderer *rend, fontMap *fontsTex);
-using drawScript = void (*)(SDL_Renderer *, fontMap *, void *);
+// typedef void (*drawScript)(SDL_Renderer *rend, texMap *fontsTex);
+using drawScript = void (*)(SDL_Renderer *, texMap *, void *);
 
 typedef size_t stateIndex;
 typedef size_t eventIndex;
 typedef size_t stateSceneIndex;
 
-typedef stateIndex (*stateHandler)(SDL_AudioDeviceID device_id);
+typedef stateIndex (*stateHandler)(SDL_AudioDeviceID device_id, void *userdata);
 typedef std::vector<std::vector<stateHandler>> stateHandleTable;
 
 typedef eventIndex (*getEvent)(SDL_Event &event, void *userdata);
@@ -62,7 +63,7 @@ typedef std::vector<std::vector<stateSceneHandler>> stateSceneHandleTable;
 
 class stateScene {
   private:
-	fontMap FontsTex;
+	texMap Texes;
 	SDL_Renderer *rend;
 	drawScript script = nullptr;
 	std::vector<drawScript> scriptSet;
@@ -75,22 +76,23 @@ class stateScene {
 	void *userdata = nullptr; // 放自定义数据，SDL给我的启发，其实使用回调也是
 	// 用于音频播放
 	SDL_AudioDeviceID device_id{};
-	SDL_AudioStream *stream = nullptr;
-	Uint8 *wav_data = nullptr;
-	Uint32 wav_len = 0;
+	// 主绘制函数，不收状态控制
+	drawScript mainDraw = nullptr;
 
   public:
 	stateScene(SDL_Renderer *rend, getEvent eventGeter,
-	           stateSceneIndex selfIndex);
+	           stateSceneIndex selfIndex, drawScript mainDrawScript,
+	           stateIndex mainStateIndex);
 	void appendDrawScript(drawScript callbackDraw,
 	                      stateIndex index); // 使用回调函数的方法绘制界面
-	void appendFontTex(SDL_Texture *fontTex, std::string fontName);
+	void appendTex(SDL_Texture *tex, std::string texName);
 	stateSceneIndex event(SDL_Event &event);
 	void show();
 	void setTable(stateHandleTable stateTable);
 	~stateScene();
 	void addUserData(void *userdata);
-	void initAudio(std::string wav_name, SDL_AudioDeviceID device_id);
+	void addDevice(SDL_AudioDeviceID devive_id);
+	void putStream(SDL_AudioStream *stream, Uint8 **wav_data, Uint32 *wav_len);
 };
 
 class stateTree {

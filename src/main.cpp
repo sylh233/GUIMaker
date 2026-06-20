@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
 void event(SDL_Event &event) {
 	bool quitFlag = 1;
 	while (quitFlag) {
-		while (SDL_PollEvent(&event)) {
+		if (SDL_PollEvent(&event)) {
 			switch (event.type) {
 			case SDL_EVENT_QUIT:
 				quitFlag = 0;
@@ -90,8 +90,11 @@ void event(SDL_Event &event) {
 				}
 				break;
 			default:
+				instance::mainTree->event(event);
 				break;
 			}
+		} else {
+			instance::mainTree->event(event);
 		}
 		SDL_SetRenderDrawColor(rend, 0x00, 0xff, 0x00, 0xff);
 		SDL_RenderClear(rend);
@@ -101,7 +104,7 @@ void event(SDL_Event &event) {
 		//
 		SDL_RenderPresent(rend);
 
-		SDL_Delay(1000 / 24.0);
+		SDL_Delay(1000 / 120.0);
 	}
 }
 
