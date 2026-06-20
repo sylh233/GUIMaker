@@ -2,3 +2,4 @@ build/
 *~
 thirdParty/SDL/
 thirdParty/SDL_ttf/
+*#

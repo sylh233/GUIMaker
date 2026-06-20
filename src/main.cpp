@@ -9,6 +9,7 @@
 const int Ww = 1600;
 const int Wh = 900;
 const double TEXTwhRATIO = 2.7;
+const double TEXTwhRATIOC = 4.2;
 // 全局变量
 SDL_Window *win;
 SDL_Renderer *rend;
@@ -24,6 +25,7 @@ void state1(double mouse_x, double mouse_y);
 //
 
 //
+using namespace gui;
 
 int main(int argc, char *argv[]) {
 	if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO)) {
@@ -103,15 +105,6 @@ void event(SDL_Event &event) {
 	}
 }
 
-SDL_FRect genRect(gui::Point p, double w, size_t l) {
-	SDL_FRect r;
-	r.x = p.x;
-	r.y = p.y;
-	r.w = w;
-	r.h = w / l * TEXTwhRATIO;
-	return r;
-}
-
 int init() {
 	std::string WName = "GUI";
 	win = SDL_CreateWindow(WName.c_str(), Ww, Wh, 0);
@@ -134,34 +127,11 @@ int init() {
 	bigFontName = "msyhbd.ttc";
 
 	//
+	instance::externVariable();
 	instance::initInstance();
 	//
 
 	return 0;
-}
-
-SDL_Texture *getFontTex(std::string fn, SDL_Color c, std::string t, float s) {
-	TTF_Font *font = TTF_OpenFont((ttfPath + fn).c_str(), s);
-	if (!font) {
-		SDL_Log("%s", SDL_GetError());
-		return nullptr;
-	}
-
-	SDL_Surface *text_surf =
-	    TTF_RenderText_Blended(font, t.c_str(), t.size(), c);
-	if (!text_surf) {
-		SDL_Log("%s", SDL_GetError());
-		return nullptr;
-	}
-	TTF_CloseFont(font);
-	SDL_Texture *r;
-	r = SDL_CreateTextureFromSurface(rend, text_surf);
-	if (!r) {
-		SDL_Log("%s", SDL_GetError());
-		return nullptr;
-	}
-	SDL_DestroySurface(text_surf);
-	return r;
 }
 
 void state1(double x, double y) {
@@ -172,24 +142,4 @@ void state1(double x, double y) {
 	SDL_Texture *t1 = getFontTex(mainFontName, c, text, 28);
 	SDL_RenderTexture(rend, t1, 0, &r1);
 	SDL_DestroyTexture(t1);
-}
-
-SDL_FRect genRectCenter(gui::Point p, double w, size_t l) {
-	double x = p.x, y = p.y, h = w / l * TEXTwhRATIO;
-	x -= w / 2;
-	y -= h / 2;
-	SDL_FRect r;
-	r.x = x;
-	r.y = y;
-	r.w = w;
-	r.h = h;
-	return r;
-}
-
-bool InRect(SDL_FRect *r, gui::Point p) {
-	if (p.x > r->x && p.x < r->x + r->w && p.y > r->y && p.y < r->y + r->h) {
-		return true;
-	} else {
-		return false;
-	}
 }

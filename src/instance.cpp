@@ -1,9 +1,15 @@
-#include <SDL3/SDL.h>
 #include <gui.h>
 #include <main.h>
 
 namespace instance {
+
 using namespace gui;
+
+void externVariable() {
+	initVariable(Ww, Wh, TEXTwhRATIO, TEXTwhRATIOC);
+	initPath(Path);
+	initMainRenderer(rend);
+}
 
 enum class SceneIndexes {
 	Main = 0,
@@ -24,7 +30,7 @@ enum class mainState {
 	toHello = 4, // 4-3 = 1
 };
 
-eventIndex mouseOnButton(SDL_Event &eve) {
+eventIndex mouseOnButton(SDL_Event &eve, void *ud) {
 	Point mouseP = {-1, -1};
 	switch (eve.type) {
 	case SDL_EVENT_MOUSE_MOTION:
@@ -55,10 +61,7 @@ eventIndex mouseOnButton(SDL_Event &eve) {
 
 	// SDL_Log("%lf,%lf\n", x, y);
 
-	Point p = {200, 200};
-	SDL_FRect rect = genRectCenter(p, 200, 5);
-
-	if (InRect(&rect, mouseP)) {
+	if (InRect((SDL_FRect *)ud, mouseP)) {
 		return (eventIndex)mouseEvent::OnButton;
 	} else {
 		return (eventIndex)mouseEvent::Null;
@@ -68,39 +71,33 @@ eventIndex mouseOnButton(SDL_Event &eve) {
 stateScene *mainScene = nullptr;
 stateTree *mainTree = nullptr;
 
-void drawMainUnOn(SDL_Renderer *re, fontMap *mp) {
+void drawMainUnOn(SDL_Renderer *re, fontMap *mp, void *ud) {
 	SDL_SetRenderDrawColor(re, 0, 0, 0, 255);
 	SDL_RenderClear(re);
-	Point p = {200, 200};
-	SDL_FRect r1 = genRectCenter(p, 200, 5);
 	SDL_SetRenderDrawColor(re, 0xff, 0xff, 0xff, 0xff);
-	SDL_RenderFillRect(re, &r1);
+	SDL_RenderFillRect(re, (SDL_FRect *)ud);
 	if (mp->count("MainButton")) {
-		SDL_RenderTexture(re, (*mp)["MainButton"], NULL, &r1);
+		SDL_RenderTexture(re, (*mp)["MainButton"], NULL, (SDL_FRect *)ud);
 	}
 }
 
-void drawMainOn(SDL_Renderer *re, fontMap *mp) {
+void drawMainOn(SDL_Renderer *re, fontMap *mp, void *ud) {
 	SDL_SetRenderDrawColor(re, 0, 0, 0, 255);
 	SDL_RenderClear(re);
-	Point p = {200, 200};
-	SDL_FRect r1 = genRectCenter(p, 200, 5);
 	SDL_SetRenderDrawColor(re, 0xff, 0, 0, 0xff);
-	SDL_RenderFillRect(re, &r1);
+	SDL_RenderFillRect(re, (SDL_FRect *)ud);
 	if (mp->count("MainWhite")) {
-		SDL_RenderTexture(re, (*mp)["MainWhite"], NULL, &r1);
+		SDL_RenderTexture(re, (*mp)["MainWhite"], NULL, (SDL_FRect *)ud);
 	}
 }
 
-void drawMainDown(SDL_Renderer *re, fontMap *mp) {
+void drawMainDown(SDL_Renderer *re, fontMap *mp, void *ud) {
 	SDL_SetRenderDrawColor(re, 0, 0, 0, 255);
 	SDL_RenderClear(re);
-	Point p = {200, 200};
-	SDL_FRect r1 = genRectCenter(p, 200, 5);
 	SDL_SetRenderDrawColor(re, 0xff, 0, 0, 128);
-	SDL_RenderFillRect(re, &r1);
+	SDL_RenderFillRect(re, (SDL_FRect *)ud);
 	if (mp->count("MainWhite")) {
-		SDL_RenderTexture(re, (*mp)["MainWhite"], NULL, &r1);
+		SDL_RenderTexture(re, (*mp)["MainWhite"], NULL, (SDL_FRect *)ud);
 	}
 }
 
@@ -135,18 +132,22 @@ enum class HelloEventIndex {
 enum class HelloStateIndex {
 	Hello = 0,
 };
-eventIndex HelloEvent(SDL_Event &eve) {
+eventIndex HelloEvent(SDL_Event &eve, void *ud) {
 	return (eventIndex)HelloEventIndex::SayHello;
 }
-void drawSayHello(SDL_Renderer *re, fontMap *mp) {
+drawScript drawSayHello = [](SDL_Renderer *re, fontMap *mp, void *ud) -> void {
 	SDL_SetRenderDrawColor(re, 0, 0, 0, 0xff);
 	SDL_RenderClear(re);
 	Point p = {(double)Ww / 2, (double)Wh / 2};
-	SDL_FRect r1 = genRectCenter(p, 600, 5);
+	SDL_FRect r1 = genRectCenter(p, 1200, 10, gui::TEXT_TYPE_HAVE_CHINESE);
 	if (mp->count("aBigHello")) {
-		SDL_RenderTexture(re, (*mp)["aBigHello"], NULL, &r1);
+		SDL_RenderTexture(re, (*mp)["aBigHello"], NULL, NULL);
 	}
-}
+};
+
+	stateHandler playMusic = []()->stateIndex{
+		
+	};
 
 stateHandleTable table3 = {{}};
 
@@ -154,10 +155,9 @@ void stayMain() {};
 
 stateSceneHandleTable table2 = {{stayMain}};
 
+SDL_FRect *rect = new SDL_FRect();
+
 void initInstance() {
-	mainScene = new stateScene(rend, mouseOnButton,
-	                           (stateSceneIndex)SceneIndexes::Main);
-	mainTree = new stateTree(mainScene, (stateSceneIndex)SceneIndexes::Main);
 	SDL_Color c1;
 	SDL_Color c2;
 	std::string t1;
@@ -165,12 +165,18 @@ void initInstance() {
 	SDL_Texture *f2;
 	c1 = {0, 0, 0, 255};
 	c2 = {255, 255, 255, 255};
-	t1 = "Hello";
-	f1 = getFontTex(mainFontName, c1, t1, 40);
-	f2 = getFontTex(mainFontName, c2, t1, 40);
+	t1 = "      按这里看惊喜（      ";
+	f1 = getFontTex(bigFontName, c1, t1, 40);
+	f2 = getFontTex(bigFontName, c2, t1, 40);
 	SDL_Color c3 = {255, 0, 0, 255};
-	std::string t3 = "Hello";
-	SDL_Texture *f3 = getFontTex(bigFontName, c3, t3, 100);
+	Point p = {100, 600};
+	*rect = genRect(p, 700, t1.size(), gui::TEXT_TYPE_HAVE_CHINESE);
+
+	mainScene = new stateScene(rend, mouseOnButton,
+	                           (stateSceneIndex)SceneIndexes::Main);
+	mainTree = new stateTree(mainScene, (stateSceneIndex)SceneIndexes::Main);
+	std::string t3 = "Hello 世界\n你看不到我";
+	SDL_Texture *f3 = getFontTex(bigFontName, c3, t3, 14);
 	HelloScene =
 	    new stateScene(rend, HelloEvent, (stateSceneIndex)SceneIndexes::Hello);
 	// if (!f1 || !f2) {
@@ -183,9 +189,14 @@ void initInstance() {
 	mainScene->appendDrawScript(drawMainOn, (stateIndex)mainState::On);
 	mainScene->appendDrawScript(drawMainDown, (stateIndex)mainState::Down);
 
+	mainScene->addUserData(rect);
+
 	HelloScene->appendFontTex(f3, "aBigHello");
 	HelloScene->appendDrawScript(drawSayHello,
 	                             (stateIndex)HelloStateIndex::Hello);
+	HelloScene->initAudio(
+	    "hello.wav",
+	    SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, NULL));
 
 	mainScene->setTable(table1);
 	HelloScene->setTable(table3);
@@ -197,5 +208,7 @@ void initInstance() {
 void destroyInstance() {
 	delete mainScene;
 	delete mainTree;
+	destroyMainRenderer();
+	delete rect;
 }
 }; // namespace instance
