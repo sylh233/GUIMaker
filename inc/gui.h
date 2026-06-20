@@ -61,6 +61,8 @@ typedef eventIndex (*getEvent)(SDL_Event &event, void *userdata);
 typedef void (*stateSceneHandler)(void);
 typedef std::vector<std::vector<stateSceneHandler>> stateSceneHandleTable;
 
+using resetFunc = void (*)(void *);
+
 class stateScene {
   private:
 	texMap Texes;
@@ -76,8 +78,10 @@ class stateScene {
 	void *userdata = nullptr; // 放自定义数据，SDL给我的启发，其实使用回调也是
 	// 用于音频播放
 	SDL_AudioDeviceID device_id{};
+	SDL_AudioStream *stream_ptr;
 	// 主绘制函数，不收状态控制
 	drawScript mainDraw = nullptr;
+	resetFunc reset;
 
   public:
 	stateScene(SDL_Renderer *rend, getEvent eventGeter,
@@ -93,6 +97,7 @@ class stateScene {
 	void addUserData(void *userdata);
 	void addDevice(SDL_AudioDeviceID devive_id);
 	void putStream(SDL_AudioStream *stream, Uint8 **wav_data, Uint32 *wav_len);
+	void setReset(resetFunc reset);
 };
 
 class stateTree {

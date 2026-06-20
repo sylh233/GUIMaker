@@ -154,6 +154,7 @@ stateSceneIndex stateScene::event(SDL_Event &e) {
 	if (nextState >= scriptSet.size()) {
 		currentStateIndex = mainStateIndex;
 		script = scriptSet[currentStateIndex];
+		reset(userdata);
 		return nextState - scriptSet.size();
 	} else {
 		currentStateIndex = nextState;
@@ -214,6 +215,7 @@ void stateScene::addDevice(SDL_AudioDeviceID id) {
 
 void stateScene::putStream(SDL_AudioStream *stream, Uint8 **wav_data,
                            Uint32 *wav_len) {
+	stream_ptr = stream; // 保存该stream，用于调节音量
 	// 先绑定再推流，错好几次
 	if (!SDL_BindAudioStream(device_id, stream)) { // 绑定设备
 		SDL_Log("%s", SDL_GetError());
@@ -225,6 +227,8 @@ void stateScene::putStream(SDL_AudioStream *stream, Uint8 **wav_data,
 	}
 	SDL_PauseAudioDevice(device_id);
 }
+
+void stateScene::setReset(resetFunc rs) { reset = rs; }
 
 stateTree::stateTree(stateScene *s, stateSceneIndex i) {
 	tree.resize(1);
