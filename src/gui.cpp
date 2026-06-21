@@ -33,7 +33,8 @@ SDL_FRect genRect(gui::Point p, double w, size_t l, double ratio) {
 	return r;
 }
 
-SDL_Texture *getFontTex(std::string fn, SDL_Color c, std::string t, float s) {
+SDL_Texture *getFontTex(SDL_Renderer *rend, std::string fn, SDL_Color c,
+                        std::string t, float s) {
 	TTF_Font *font = TTF_OpenFont((ttf_path + fn).c_str(), s);
 	if (!font) {
 		SDL_Log("%s", SDL_GetError());
@@ -48,7 +49,7 @@ SDL_Texture *getFontTex(std::string fn, SDL_Color c, std::string t, float s) {
 	}
 	TTF_CloseFont(font);
 	SDL_Texture *r;
-	r = SDL_CreateTextureFromSurface(mainRenderer, text_surf);
+	r = SDL_CreateTextureFromSurface(rend, text_surf);
 	if (!r) {
 		SDL_Log("%s", SDL_GetError());
 		return nullptr;
@@ -79,13 +80,13 @@ bool InRect(SDL_FRect *r, gui::Point p) {
 	}
 }
 
-SDL_Texture *getBMP(std::string bmpN) {
+SDL_Texture *getBMP(SDL_Renderer *rend, std::string bmpN) {
 	SDL_Surface *ts;
 	ts = SDL_LoadBMP((path + bmpN).c_str());
 	if (!ts) {
 		SDL_Log("%s", SDL_GetError());
 	}
-	SDL_Texture *r = SDL_CreateTextureFromSurface(mainRenderer, ts);
+	SDL_Texture *r = SDL_CreateTextureFromSurface(rend, ts);
 	if (!r) {
 		SDL_Log("%s", SDL_GetError());
 	}
@@ -93,38 +94,64 @@ SDL_Texture *getBMP(std::string bmpN) {
 	return r;
 }
 
-void loadWAV(std::string wn, SDL_AudioStream *&stream, Uint8 **wav_data,
+bool loadWAV(std::string wn, SDL_AudioStream *&stream, Uint8 **wav_data,
              Uint32 *wav_len) {
 	SDL_AudioSpec spec;
 	if (!SDL_LoadWAV((wav_path + wn).c_str(), &spec, wav_data,
 	                 wav_len)) { // 加载wav
 		SDL_Log("%s", SDL_GetError());
-		return;
+		return false;
 	}
 	// 注意stream是指针引用，因为我们要给他赋值
 	stream = SDL_CreateAudioStream(&spec, NULL);
 	if (!stream) {
 		SDL_Log("%s", SDL_GetError());
-		return;
+		return false;
 	}
+	return true;
 }
 
-stateScene::stateScene(SDL_Renderer *r, getEvent geter, stateSceneIndex self,
-                       drawScript mds, stateIndex mi)
-    : script(nullptr) { // 一定不要忘记给script初始化为零，要不然随机报错
+bool addDevice(SDL_AudioDeviceID device_id, SDL_AudioDeviceID id) {
+	device_id = id;
+	if (!device_id) {
+		SDL_Log("%s", SDL_GetError());
+		return false;
+	}
+	return true;
+}
+
+bool putStream(SDL_AudioDeviceID device_id, SDL_AudioStream *stream,
+               Uint8 **wav_data, Uint32 *wav_len) {
+	// 先绑定再推流，错好几次
+	if (!SDL_BindAudioStream(device_id, stream)) { // 绑定设备
+		SDL_Log("%s", SDL_GetError());
+		return false;
+	}
+	if (!SDL_PutAudioStreamData(stream, *wav_data, *wav_len)) { // 推流
+		SDL_Log("%s", SDL_GetError());
+		return false;
+	}
+	SDL_PauseAudioDevice(device_id);
+	return true;
+}
+
+stateScene::stateScene(
+    drawScript mds, getEvent geter, void *userdata, resetFunc rs,
+    stateSceneIndex self, stateScript mss,
+    stateIndex mi) { // 一定不要忘记给script初始化为零，要不然随机报错
 	scriptSet.resize(1);
 	eventGeter = geter;
-	rend = r;
 	selfIndex = self;
 	mainStateIndex = mi;
 	currentStateIndex = mi;
-	appendDrawScript(mds, mi);
-	script = scriptSet[mi];
+	draw_script = mds;
+	appendStateScript(mss, mi);
+	reset = rs;
 }
 
-void stateScene::appendDrawScript(drawScript call, stateIndex i) {
-	while (i >= scriptSet.size()) {
-		scriptSet.resize(scriptSet.size() + 1);
+void stateScene::appendStateScript(stateScript call, stateIndex i) {
+	if (i >= scriptSet.size()) {
+		scriptSet.resize(i);
 	}
 	// if (script == nullptr) {
 	// 	currentStateIndex = i;
@@ -145,30 +172,26 @@ void stateScene::setTable(stateHandleTable table) {
 stateSceneIndex stateScene::event(SDL_Event &e) {
 	if (currentStateIndex >= stateTable.size() ||
 	    eventGeter(e, userdata) >= stateTable[currentStateIndex].size() ||
-	    stateTable[currentStateIndex][eventGeter(e, userdata)] == NULL) {
+	    stateTable[currentStateIndex][eventGeter(e, userdata)] == nullptr) {
 		return selfIndex;
 	}
-	stateIndex nextState =
+	doubleIndex nextDouble =
 	    stateTable[currentStateIndex][eventGeter(e, userdata)](device_id,
 	                                                           userdata);
+	stateIndex nextState = (stateIndex)(nextDouble & 0x00000000ffffffff);
+	stateSceneIndex nextStateScene = (stateSceneIndex)(nextDouble >> 32);
 	if (nextState >= scriptSet.size()) {
 		currentStateIndex = mainStateIndex;
-		script = scriptSet[currentStateIndex];
-		reset(userdata);
-		return nextState - scriptSet.size();
 	} else {
 		currentStateIndex = nextState;
-		script = scriptSet[currentStateIndex];
-		return selfIndex;
 	}
+	return nextStateScene;
 }
 
-void stateScene::show() {
-	if (script != nullptr) {
-		script(rend, &Texes, userdata);
-	}
-	if (mainDraw != nullptr) {
-		mainDraw(rend, &Texes, userdata);
+void stateScene::show(SDL_Renderer *rend) {
+	scriptSet[currentStateIndex](userdata);
+	if (draw_script != nullptr) {
+		draw_script(rend, &Texes, userdata);
 	}
 }
 
@@ -177,8 +200,6 @@ stateScene::~stateScene() {
 		SDL_DestroyTexture(p->second);
 	}
 }
-
-void stateScene::addUserData(void *ud) { userdata = ud; }
 
 // 缅怀祖宗函数（
 /*void stateScene::initAudio(std::string wn, SDL_AudioDeviceID id) {
@@ -204,31 +225,6 @@ if (!SDL_PutAudioStreamData(stream, wav_data, wav_len)) { // 推流
 }
 SDL_PauseAudioDevice(device_id);
 }*/
-
-void stateScene::addDevice(SDL_AudioDeviceID id) {
-	if (!id) {
-		SDL_Log("%s", SDL_GetError());
-		return;
-	}
-	device_id = id;
-}
-
-void stateScene::putStream(SDL_AudioStream *stream, Uint8 **wav_data,
-                           Uint32 *wav_len) {
-	stream_ptr = stream; // 保存该stream，用于调节音量
-	// 先绑定再推流，错好几次
-	if (!SDL_BindAudioStream(device_id, stream)) { // 绑定设备
-		SDL_Log("%s", SDL_GetError());
-		return;
-	}
-	if (!SDL_PutAudioStreamData(stream, *wav_data, *wav_len)) { // 推流
-		SDL_Log("%s", SDL_GetError());
-		return;
-	}
-	SDL_PauseAudioDevice(device_id);
-}
-
-void stateScene::setReset(resetFunc rs) { reset = rs; }
 
 stateTree::stateTree(stateScene *s, stateSceneIndex i) {
 	tree.resize(1);
@@ -262,6 +258,6 @@ void stateTree::event(SDL_Event &eve) {
 	currentState = nextIndex;
 }
 
-void stateTree::run() { tree[currentState]->show(); }
+void stateTree::run(SDL_Renderer *rend) { tree[currentState]->show(rend); }
 
 }; // namespace gui
