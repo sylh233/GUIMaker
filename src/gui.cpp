@@ -4,7 +4,8 @@ namespace gui {
 
 double WinWeight, WinHeight, TextRatio, TextRatioC;
 std::string path, ttf_path, wav_path;
-SDL_Renderer *mainRenderer;
+SDL_Renderer *gui_renderer;
+SDL_Event *gui_event;
 
 void initVariable(double w, double h, double tr, double trc) {
 	WinWeight = w;
@@ -19,19 +20,12 @@ void initPath(std::string p) {
 	wav_path = p + "wav\\";
 }
 
-void initMainRenderer(SDL_Renderer *rend) { mainRenderer = rend; }
-
-void destroyMainRenderer() { SDL_DestroyRenderer(mainRenderer); }
-
-SDL_FRect genRect(gui::Point p, double w, size_t l, double ratio) {
-	SDL_FRect r;
-	l = l == 0 ? 1 : l;
-	r.x = p.x;
-	r.y = p.y;
-	r.w = w;
-	r.h = w / l * ratio;
-	return r;
+void initSDL(SDL_Renderer *r, SDL_Event *e) {
+	gui_renderer = r;
+	gui_event = e;
 }
+
+void destroySDL() { SDL_DestroyRenderer(gui_renderer); }
 
 SDL_Texture *getFontTex(SDL_Renderer *rend, std::string fn, SDL_Color c,
                         std::string t, float s) {
@@ -55,6 +49,16 @@ SDL_Texture *getFontTex(SDL_Renderer *rend, std::string fn, SDL_Color c,
 		return nullptr;
 	}
 	SDL_DestroySurface(text_surf);
+	return r;
+}
+
+SDL_FRect genRect(gui::Point p, double w, size_t l, double ratio) {
+	SDL_FRect r;
+	l = l == 0 ? 1 : l;
+	r.x = p.x;
+	r.y = p.y;
+	r.w = w;
+	r.h = w / l * ratio;
 	return r;
 }
 
@@ -135,71 +139,59 @@ bool putStream(SDL_AudioDeviceID device_id, SDL_AudioStream *stream,
 	return true;
 }
 
-stateScene::stateScene(
-    drawScript mds, getEvent geter, void *userdata, resetFunc rs,
-    stateSceneIndex self, stateScript mss,
-    stateIndex mi) { // 一定不要忘记给script初始化为零，要不然随机报错
-	scriptSet.resize(1);
+void appendTex(texMap *tm, SDL_Texture *tex, std::string name) {
+	(*tm)[name] = tex;
+}
+
+void destroyTexMap(texMap *tm) {
+	for (auto p = tm->begin(); p != tm->end(); p++) {
+		SDL_DestroyTexture(p->second);
+	}
+}
+
+stateScene::stateScene(stateScript mss, getEvent geter, void *ud, void *od,
+                       stateIndex mi) { // 一定不要忘记给script初始化为零
 	eventGeter = geter;
-	selfIndex = self;
 	mainStateIndex = mi;
 	currentStateIndex = mi;
-	draw_script = mds;
-	appendStateScript(mss, mi);
-	reset = rs;
+	main_script = mss;
+	userdata = ud;
+	outdata = od;
 }
 
-void stateScene::appendStateScript(stateScript call, stateIndex i) {
-	if (i >= scriptSet.size()) {
-		scriptSet.resize(i);
-	}
-	// if (script == nullptr) {
-	// 	currentStateIndex = i;
-	// 	script = call;
-	// 	mainStateIndex = i;
-	// }
-	scriptSet[i] = call;
-}
-
-void stateScene::appendTex(SDL_Texture *tex, std::string name) {
-	Texes[name] = tex;
-}
+void stateScene::setStateScripts(scriptSet sS) { script_set = std::move(sS); }
 
 void stateScene::setTable(stateHandleTable table) {
 	stateTable = std::move(table);
 }
 
-stateSceneIndex stateScene::event(SDL_Event &e) {
+void stateScene::event() {
 	if (currentStateIndex >= stateTable.size() ||
-	    eventGeter(e, userdata) >= stateTable[currentStateIndex].size() ||
-	    stateTable[currentStateIndex][eventGeter(e, userdata)] == nullptr) {
-		return selfIndex;
+	    eventGeter(userdata, outdata) >= stateTable[currentStateIndex].size() ||
+	    stateTable[currentStateIndex][eventGeter(userdata, outdata)] ==
+	        nullptr) {
+		return;
 	}
-	doubleIndex nextDouble =
-	    stateTable[currentStateIndex][eventGeter(e, userdata)](device_id,
-	                                                           userdata);
-	stateIndex nextState = (stateIndex)(nextDouble & 0x00000000ffffffff);
-	stateSceneIndex nextStateScene = (stateSceneIndex)(nextDouble >> 32);
-	if (nextState >= scriptSet.size()) {
+	stateIndex nextState =
+	    stateTable[currentStateIndex][eventGeter(userdata, outdata)](userdata,
+	                                                                 outdata);
+	if (nextState >= script_set.size()) {
 		currentStateIndex = mainStateIndex;
 	} else {
 		currentStateIndex = nextState;
 	}
-	return nextStateScene;
+	return;
 }
 
-void stateScene::show(SDL_Renderer *rend) {
-	scriptSet[currentStateIndex](userdata);
-	if (draw_script != nullptr) {
-		draw_script(rend, &Texes, userdata);
+void stateScene::run() {
+	script_set[currentStateIndex](userdata, outdata);
+	if (main_script != nullptr) {
+		main_script(userdata, outdata);
 	}
 }
+void stateScene::setDestructor(dst_script ds) { destructor = ds; }
 
-stateScene::~stateScene() {
-	for (auto p = Texes.begin(); p != Texes.end(); p++) {
-		SDL_DestroyTexture(p->second);
-	}
-}
+stateScene::~stateScene() { destructor(userdata); }
 
 // 缅怀祖宗函数（
 /*void stateScene::initAudio(std::string wn, SDL_AudioDeviceID id) {
@@ -226,38 +218,41 @@ if (!SDL_PutAudioStreamData(stream, wav_data, wav_len)) { // 推流
 SDL_PauseAudioDevice(device_id);
 }*/
 
+// 已弃用
+/*
 stateTree::stateTree(stateScene *s, stateSceneIndex i) {
-	tree.resize(1);
-	appendState(s, i);
-	currentState = i;
+tree.resize(1);
+appendState(s, i);
+currentState = i;
 }
 
 void stateTree::appendState(stateScene *s, stateSceneIndex i) {
-	while (i >= tree.size()) {
-		tree.resize(tree.size() + 1);
-	}
-	tree[i] = s;
+while (i >= tree.size()) {
+    tree.resize(tree.size() + 1);
+}
+tree[i] = s;
 }
 
 void stateTree::setTable(stateSceneHandleTable table) {
-	stateSceneTable = std::move(table);
+stateSceneTable = std::move(table);
 }
 
 void stateTree::event(SDL_Event &eve) {
-	if (currentState >= tree.size()) {
-		return;
-	}
-	stateSceneIndex nextIndex = tree[currentState]->event(eve);
-	if (nextIndex >= tree.size()) {
-		return;
-	}
-	if (currentState < stateSceneTable.size() &&
-	    nextIndex < stateSceneTable[currentState].size()) {
-		stateSceneTable[currentState][nextIndex]();
-	}
-	currentState = nextIndex;
+if (currentState >= tree.size()) {
+    return;
+}
+stateSceneIndex nextIndex = tree[currentState]->event(eve);
+if (nextIndex >= tree.size()) {
+    return;
+}
+if (currentState < stateSceneTable.size() &&
+    nextIndex < stateSceneTable[currentState].size()) {
+    stateSceneTable[currentState][nextIndex]();
+}
+currentState = nextIndex;
 }
 
 void stateTree::run(SDL_Renderer *rend) { tree[currentState]->show(rend); }
+*/
 
 }; // namespace gui

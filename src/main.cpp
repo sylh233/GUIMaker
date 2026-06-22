@@ -63,7 +63,7 @@ void event(SDL_Event &event) {
 				quitFlag = 0;
 				break;
 			case SDL_EVENT_MOUSE_MOTION:
-				instance::mainTree->event(event);
+				instance::mainScene->event();
 				break;
 			case SDL_EVENT_KEY_DOWN:
 				switch (event.key.key) {
@@ -71,36 +71,36 @@ void event(SDL_Event &event) {
 					quitFlag = 0;
 					break;
 				default:
-					instance::mainTree->event(event);
+					instance::mainScene->event();
 					break;
 				}
 				break;
 			case SDL_EVENT_MOUSE_BUTTON_DOWN:
 				switch (event.button.button) {
 				default:
-					instance::mainTree->event(event);
+					instance::mainScene->event();
 					break;
 				}
 				break;
 			case SDL_EVENT_MOUSE_BUTTON_UP:
 				switch (event.button.button) {
 				default:
-					instance::mainTree->event(event);
+					instance::mainScene->event();
 					break;
 				}
 				break;
 			default:
-				instance::mainTree->event(event);
+				instance::mainScene->event();
 				break;
 			}
 		} else {
-			instance::mainTree->event(event);
+			instance::mainScene->event();
 		}
 		SDL_SetRenderDrawColor(rend, 0x00, 0xff, 0x00, 0xff);
 		SDL_RenderClear(rend);
 		//
 		// state1(mx, my);
-		instance::mainTree->run();
+		instance::mainScene->run();
 		//
 		SDL_RenderPresent(rend);
 
@@ -142,7 +142,7 @@ void state1(double x, double y) {
 	gui::Point p{x, y};
 	SDL_FRect r1 = genRect(p, 200, text.size());
 	SDL_Color c = {0xff, 0x00, 0x00, 0xff};
-	SDL_Texture *t1 = getFontTex(mainFontName, c, text, 28);
+	SDL_Texture *t1 = getFontTex(rend, mainFontName, c, text, 28);
 	SDL_RenderTexture(rend, t1, 0, &r1);
 	SDL_DestroyTexture(t1);
 }
