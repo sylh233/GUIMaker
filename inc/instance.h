@@ -5,7 +5,8 @@
 
 namespace instance {
 extern gui::stateScene *mainScene;
-// extern gui::stateTree *mainTree;
+extern gui::stateScene *HelloScene;
+extern gui::stateScene *SceneController;
 void externVariable();
 void initInstance();
 void destroyInstance();

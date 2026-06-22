@@ -24,7 +24,7 @@ void initSDL(SDL_Renderer *r, SDL_Event *e) {
 	gui_renderer = r;
 	gui_event = e;
 }
-
+// 一般在main中都会释放，不需要手动执行这个函数，不然会崩溃
 void destroySDL() { SDL_DestroyRenderer(gui_renderer); }
 
 SDL_Texture *getFontTex(SDL_Renderer *rend, std::string fn, SDL_Color c,
@@ -115,7 +115,7 @@ bool loadWAV(std::string wn, SDL_AudioStream *&stream, Uint8 **wav_data,
 	return true;
 }
 
-bool addDevice(SDL_AudioDeviceID device_id, SDL_AudioDeviceID id) {
+bool addDevice(SDL_AudioDeviceID &device_id, SDL_AudioDeviceID id) {
 	device_id = id;
 	if (!device_id) {
 		SDL_Log("%s", SDL_GetError());
@@ -184,7 +184,9 @@ void stateScene::event() {
 }
 
 void stateScene::run() {
-	script_set[currentStateIndex](userdata, outdata);
+	if (script_set.size() > 0 && currentStateIndex < script_set.size()) {
+		script_set[currentStateIndex](userdata, outdata);
+	}
 	if (main_script != nullptr) {
 		main_script(userdata, outdata);
 	}

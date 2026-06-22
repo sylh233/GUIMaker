@@ -43,7 +43,9 @@ SDL_Texture *getBMP(SDL_Renderer *renderer, std::string bmpName);
 bool loadWAV(std::string wav_name, SDL_AudioStream *&stream, Uint8 **wav_data,
              Uint32 *wav_len);
 // 设置播放设备，将device_id赋值为id
-bool addDevice(SDL_AudioDeviceID device_id, SDL_AudioDeviceID id);
+bool addDevice(SDL_AudioDeviceID &device_id,
+               SDL_AudioDeviceID id = SDL_OpenAudioDevice(
+                   SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, NULL));
 // 绑定设备，将stream绑定到device_id
 bool putStream(SDL_AudioDeviceID device_id, SDL_AudioStream *stream,
                Uint8 **wav_data, Uint32 *wav_len);

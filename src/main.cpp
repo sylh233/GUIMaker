@@ -63,7 +63,7 @@ void event(SDL_Event &event) {
 				quitFlag = 0;
 				break;
 			case SDL_EVENT_MOUSE_MOTION:
-				instance::mainScene->event();
+				instance::SceneController->event();
 				break;
 			case SDL_EVENT_KEY_DOWN:
 				switch (event.key.key) {
@@ -71,36 +71,36 @@ void event(SDL_Event &event) {
 					quitFlag = 0;
 					break;
 				default:
-					instance::mainScene->event();
+					instance::SceneController->event();
 					break;
 				}
 				break;
 			case SDL_EVENT_MOUSE_BUTTON_DOWN:
 				switch (event.button.button) {
 				default:
-					instance::mainScene->event();
+					instance::SceneController->event();
 					break;
 				}
 				break;
 			case SDL_EVENT_MOUSE_BUTTON_UP:
 				switch (event.button.button) {
 				default:
-					instance::mainScene->event();
+					instance::SceneController->event();
 					break;
 				}
 				break;
 			default:
-				instance::mainScene->event();
+				instance::SceneController->event();
 				break;
 			}
 		} else {
-			instance::mainScene->event();
+			instance::SceneController->event();
 		}
 		SDL_SetRenderDrawColor(rend, 0x00, 0xff, 0x00, 0xff);
 		SDL_RenderClear(rend);
 		//
 		// state1(mx, my);
-		instance::mainScene->run();
+		instance::SceneController->run();
 		//
 		SDL_RenderPresent(rend);
 
