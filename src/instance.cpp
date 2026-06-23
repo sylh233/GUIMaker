@@ -28,20 +28,26 @@ struct mainUDS {
 	SDL_Color buttonC = {255, 255, 255, 255};
 } mainUD;
 
+enum class treeEventIndex {
+	idle,
+	mainToHello,
+	HelloTomain,
+};
+
+enum class treeStateIndex {
+	Main = 0,
+	Hello = 1,
+};
+
 struct treeUDS {
 	std::string info = "你好";
 	std::vector<stateScene *> sv;
-	size_t current = 0;
+	eventIndex eve = (eventIndex)treeEventIndex::idle;
 } treeUD;
 
 SDL_AudioStream *stream = nullptr;
 Uint8 *wav_data = nullptr;
 Uint32 wav_len = 0;
-
-enum class SceneIndexes {
-	Main = 0,
-	Hello = 1,
-};
 
 enum class mouseEvent {
 	Null = 0,
@@ -197,7 +203,7 @@ stateIndex buttonDownToHello(void *ud, void *od) {
 	SDL_Log("Hello(Debugging):)");
 	treeUDS *odp = (treeUDS *)od;
 	mainUDS *udp = (mainUDS *)ud;
-	odp->current = 1;
+	odp->eve = (eventIndex)treeEventIndex::mainToHello;
 	udp->mouseP = {-1, -1};
 	return (stateIndex)mainState::UnOn;
 }
@@ -297,7 +303,7 @@ stateScript drawHello = [](void *ud, void *od) {
 	if (mp->count("aBigHello")) {
 		SDL_RenderTexture(re, (*mp)["aBigHello"], NULL, &r1);
 	}
-	SDL_FRect r3_d = genRectCenter({WinWeight / 2, 800}, 300, 22, TextRatioC);
+	SDL_FRect r3_d = genRectCenter({WinWeight / 2, 800}, 300, 24, TextRatioC);
 	if (mp->count("下面的小字")) {
 		SDL_RenderTexture(re, (*mp)["下面的小字"], NULL, &r3_d);
 	}
@@ -386,7 +392,7 @@ stateHandler hdBackUp = [](void *ud, void *od) -> stateIndex {
 	HelloUDS *udp = (HelloUDS *)ud;
 	SDL_PauseAudioDevice(udp->id);
 	treeUDS *odp = (treeUDS *)od;
-	odp->current = 0;
+	odp->eve = (eventIndex)treeEventIndex::HelloTomain;
 	udp->mouseP = {-1, -1};
 	return (stateIndex)HelloStateIndex::Hello;
 };
@@ -449,26 +455,45 @@ dst_script ds2 = [](void *ud) {
 };
 
 stateScene *SceneController = nullptr;
+
 getEvent treeEvent = [](void *ud, void *od) -> eventIndex {
 	treeUDS *udp = (treeUDS *)ud;
-	(udp->sv)[udp->current]->event();
-	return 0;
+	eventIndex e = udp->eve;
+	udp->eve = (eventIndex)treeEventIndex::idle;
+	return e;
 };
 
 stateScript sceneShow = [](void *ud, void *od) {
+	return;
 	treeUDS *udp = (treeUDS *)ud;
-	(udp->sv)[udp->current]->run();
 };
 
-stateScript treeIdle = [](void *ud, void *od) { return; };
-
-scriptSet treeSS = {treeIdle};
-
-stateHandler treeHandlerIdle = [](void *ud, void *od) -> stateIndex {
-	return 0;
+stateScript treeMain = [](void *ud, void *od) {
+	treeUDS *udp = (treeUDS *)ud;
+	(udp->sv)[(size_t)treeStateIndex::Main]->event();
+	(udp->sv)[(size_t)treeStateIndex::Main]->run();
 };
 
-stateHandleTable treeTable = {{treeHandlerIdle}};
+stateScript treeHello = [](void *ud, void *od) {
+	treeUDS *udp = (treeUDS *)ud;
+	(udp->sv)[(size_t)treeStateIndex::Hello]->event();
+	(udp->sv)[(size_t)treeStateIndex::Hello]->run();
+};
+
+scriptSet treeSS = {treeMain, treeHello};
+
+stateHandler treeMToH = [](void *ud, void *od) -> stateIndex {
+	return (stateIndex)treeStateIndex::Hello;
+};
+
+stateHandler treeHToM = [](void *ud, void *od) -> stateIndex {
+	return (stateIndex)treeStateIndex::Main;
+};
+
+stateHandleTable treeTable = {
+    {nullptr, treeMToH},
+    {nullptr, nullptr, treeHToM},
+};
 
 void initInstance() {
 	SDL_Color c1;
@@ -485,13 +510,14 @@ void initInstance() {
 	Point p = {100, 600};
 	mainUD.rect = genRect(p, 700, t1.size(), TextRatioC);
 	HelloUD.backButtonR = genRect({100, 100}, 200, 4);
-	HelloUD.lowVolumeR = genRect({WinWeight - 200, WinHeight - 200}, 100, 1, 1);
-	HelloUD.highVolumeR = genRect({WinWeight - 200, 100}, 100, 1, 1);
-	HelloUD.vr = genRectCenter({WinWeight / 2, 100}, 100, 3);
+	HelloUD.lowVolumeR =
+	    genRect({WinWeight - 200, WinHeight - 200}, 100, 1, 1.2);
+	HelloUD.highVolumeR = genRect({WinWeight - 200, 100}, 100, 1, 1.2);
+	HelloUD.vr = genRectCenter({WinWeight / 2, 100}, 100, 4);
 	std::string th = "大";
 	std::string tl = "小";
-	SDL_Texture *TH = getFontTex(gui_renderer, mainFontName, c2, th, 20);
-	SDL_Texture *TL = getFontTex(gui_renderer, mainFontName, c2, tl, 20);
+	SDL_Texture *TH = getFontTex(gui_renderer, mainFontName, c2, th, 40);
+	SDL_Texture *TL = getFontTex(gui_renderer, mainFontName, c2, tl, 40);
 
 	mainScene = new stateScene(mainMainScript, mouseOnButton, &mainUD, &treeUD,
 	                           (stateIndex)mainState::UnOn);

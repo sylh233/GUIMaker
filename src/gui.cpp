@@ -166,15 +166,14 @@ void stateScene::setTable(stateHandleTable table) {
 }
 
 void stateScene::event() {
+	eventIndex eve = eventGeter(userdata, outdata);
 	if (currentStateIndex >= stateTable.size() ||
 	    eventGeter(userdata, outdata) >= stateTable[currentStateIndex].size() ||
-	    stateTable[currentStateIndex][eventGeter(userdata, outdata)] ==
-	        nullptr) {
+	    stateTable[currentStateIndex][eve] == nullptr) {
 		return;
 	}
 	stateIndex nextState =
-	    stateTable[currentStateIndex][eventGeter(userdata, outdata)](userdata,
-	                                                                 outdata);
+	    stateTable[currentStateIndex][eve](userdata, outdata);
 	if (nextState >= script_set.size()) {
 		currentStateIndex = mainStateIndex;
 	} else {
@@ -193,7 +192,11 @@ void stateScene::run() {
 }
 void stateScene::setDestructor(dst_script ds) { destructor = ds; }
 
-stateScene::~stateScene() { destructor(userdata); }
+stateScene::~stateScene() {
+	if (destructor != nullptr) {
+		destructor(userdata);
+	}
+}
 
 // 缅怀祖宗函数（
 /*void stateScene::initAudio(std::string wn, SDL_AudioDeviceID id) {
