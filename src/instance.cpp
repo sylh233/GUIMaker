@@ -1,5 +1,6 @@
 #include <SDL3/SDL_time.h>
 #include <gui.h>
+#include <gui_menu.h>
 #include <main.h>
 
 namespace instance {
@@ -495,6 +496,11 @@ stateHandleTable treeTable = {
     {nullptr, nullptr, treeHToM},
 };
 
+SDL_FRect fb = {100, 200, 200, 100};
+SDL_FRect fb2 = {400, 200, 200, 100};
+Button b1(&fb, "我是按钮");
+Button b2(&fb2, "我是后背");
+
 void initInstance() {
 	SDL_Color c1;
 	SDL_Color c2;
@@ -603,6 +609,19 @@ void initInstance() {
 	SceneController = new stateScene(sceneShow, treeEvent, &treeUD, nullptr, 0);
 	SceneController->setTable(treeTable);
 	SceneController->setStateScripts(treeSS);
+
+	struct ODS {
+		std::string od1 = "nihao";
+	} static OD1, OD2;
+	OD2.od1 = "I'm back";
+	buttonScript bs1 = [](void *od) {
+		ODS *odp = (ODS *)od;
+		SDL_Log("%s", odp->od1.c_str());
+	};
+	b1.setScript(&OD1, bs1);
+	b1.createButton();
+	b2.setScript(&OD2, bs1);
+	b2.createButton();
 }
 
 void destroyInstance() {

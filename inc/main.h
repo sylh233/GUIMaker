@@ -17,5 +17,7 @@ extern std::string bigFontName;
 // 函数原型
 int init();
 void event(SDL_Event &event);
+void many_event();
+void many_run();
 
 #endif

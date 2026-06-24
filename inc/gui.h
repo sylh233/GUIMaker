@@ -3,6 +3,7 @@
 
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
+#include <functional>
 #include <map>
 #include <string>
 #include <vector>
@@ -56,21 +57,24 @@ void appendTex(texMap *tm, SDL_Texture *tex, std::string name);
 
 void destroyTexMap(texMap *tm);
 
-// 用于绘制的回调函数(现统一用一种脚本函数
+// 用于绘制的回调函数(现统一用一种脚本函数（现在改用function容器了
 // typedef void (*drawScript)(SDL_Renderer *rend, texMap *fontsTex);
 // using drawScript = void (*)(SDL_Renderer *, texMap *, void *);
 
 // userdata 和 outdata 本质相同，只是显式的区分状态机内部信息和外部信息
-using stateScript = void (*)(void *userdata, void *outdata);
+// using stateScript = void (*)(void *userdata, void *outdata);
+using stateScript = std::function<void(void *userdata, void *outdata)>;
 using scriptSet = std::vector<stateScript>;
 
 typedef uint32_t stateIndex;
 typedef uint32_t eventIndex;
 
-typedef stateIndex (*stateHandler)(void *userdata, void *outdata);
+// typedef stateIndex (*stateHandler)(void *userdata, void *outdata);
+using stateHandler = std::function<stateIndex(void *userdata, void *outdata)>;
 typedef std::vector<std::vector<stateHandler>> stateHandleTable;
 
-typedef eventIndex (*getEvent)(void *userdata, void *outdata);
+// typedef eventIndex (*getEvent)(void *userdata, void *outdata);
+using getEvent = std::function<eventIndex(void *userdata, void *outdata)>;
 
 using dst_script = void (*)(void *userdata);
 

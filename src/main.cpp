@@ -1,6 +1,7 @@
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include <gui.h>
+#include <gui_menu.h>
 #include <instance.h>
 #include <main.h>
 #include <string>
@@ -63,7 +64,7 @@ void event(SDL_Event &event) {
 				quitFlag = 0;
 				break;
 			case SDL_EVENT_MOUSE_MOTION:
-				instance::SceneController->event();
+				many_event();
 				break;
 			case SDL_EVENT_KEY_DOWN:
 				switch (event.key.key) {
@@ -71,36 +72,36 @@ void event(SDL_Event &event) {
 					quitFlag = 0;
 					break;
 				default:
-					instance::SceneController->event();
+					many_event();
 					break;
 				}
 				break;
 			case SDL_EVENT_MOUSE_BUTTON_DOWN:
 				switch (event.button.button) {
 				default:
-					instance::SceneController->event();
+					many_event();
 					break;
 				}
 				break;
 			case SDL_EVENT_MOUSE_BUTTON_UP:
 				switch (event.button.button) {
 				default:
-					instance::SceneController->event();
+					many_event();
 					break;
 				}
 				break;
 			default:
-				instance::SceneController->event();
+				many_event();
 				break;
 			}
 		} else {
-			instance::SceneController->event();
+			many_event();
 		}
 		SDL_SetRenderDrawColor(rend, 0x00, 0xff, 0x00, 0xff);
 		SDL_RenderClear(rend);
 		//
 		// state1(mx, my);
-		instance::SceneController->run();
+		many_run();
 		//
 		SDL_RenderPresent(rend);
 
@@ -145,4 +146,16 @@ void state1(double x, double y) {
 	SDL_Texture *t1 = getFontTex(rend, mainFontName, c, text, 28);
 	SDL_RenderTexture(rend, t1, 0, &r1);
 	SDL_DestroyTexture(t1);
+}
+
+void many_event() {
+	instance::b1.event();
+	instance::b2.event();
+	instance::SceneController->event();
+}
+
+void many_run() {
+	instance::SceneController->run();
+	instance::b1.run();
+	instance::b2.run();
 }

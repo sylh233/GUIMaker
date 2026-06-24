@@ -168,7 +168,7 @@ void stateScene::setTable(stateHandleTable table) {
 void stateScene::event() {
 	eventIndex eve = eventGeter(userdata, outdata);
 	if (currentStateIndex >= stateTable.size() ||
-	    eventGeter(userdata, outdata) >= stateTable[currentStateIndex].size() ||
+	    eve >= stateTable[currentStateIndex].size() ||
 	    stateTable[currentStateIndex][eve] == nullptr) {
 		return;
 	}
