@@ -1,15 +1,16 @@
 #ifndef INSTANCE
 #define INSTANCE
 
-#include <gui.h>
-#include <gui_menu.h>
+#include <GUI.h>
 
 namespace instance {
-extern gui::stateScene *mainScene;
-extern gui::stateScene *HelloScene;
-extern gui::stateScene *SceneController;
-extern gui::Button b1;
-extern gui::Button b2;
+using namespace GUI;
+	
+extern GUI::stateMachine *mainScene;
+extern GUI::stateMachine *HelloScene;
+extern GUI::stateMachine *SceneController;
+extern GUI::Button b1;
+extern GUI::Button b2;
 void externVariable();
 void initInstance();
 void destroyInstance();

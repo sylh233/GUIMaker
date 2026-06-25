@@ -1,6 +1,6 @@
-#include <gui_timer.h>
+#include <GUI_Timer.h>
 
-namespace gui {
+namespace GUI {
 Timer::Timer(long long p, bool oneshot) {
 	point = std::chrono::steady_clock::now();
 	period = std::chrono::milliseconds(p);
@@ -19,4 +19,4 @@ bool Timer::elapse() {
 		return false;
 	}
 }
-} // namespace gui
+} // namespace GUI

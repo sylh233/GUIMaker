@@ -1,11 +1,11 @@
+#include <GUI.h>
+#include <GUI_main.h>
 #include <SDL3/SDL_time.h>
-#include <gui.h>
-#include <gui_menu.h>
 #include <main.h>
 
 namespace instance {
 
-using namespace gui;
+using namespace GUI;
 
 void externVariable() {
 	initVariable(Ww, Wh, TEXTwhRATIO, TEXTwhRATIOC);
@@ -13,9 +13,9 @@ void externVariable() {
 	initSDL(rend, &eve);
 }
 
-stateScene *mainScene = nullptr;
+stateMachine *mainScene = nullptr;
 
-stateScene *HelloScene;
+stateMachine *HelloScene;
 
 texMap tm1;
 
@@ -42,7 +42,7 @@ enum class treeStateIndex {
 
 struct treeUDS {
 	std::string info = "你好";
-	std::vector<stateScene *> sv;
+	std::vector<stateMachine *> sv;
 	eventIndex eve = (eventIndex)treeEventIndex::idle;
 } treeUD;
 
@@ -455,7 +455,7 @@ dst_script ds2 = [](void *ud) {
 	SDL_CloseAudioDevice(udp->id);
 };
 
-stateScene *SceneController = nullptr;
+stateMachine *SceneController = nullptr;
 
 getEvent treeEvent = [](void *ud, void *od) -> eventIndex {
 	treeUDS *udp = (treeUDS *)ud;
@@ -525,8 +525,8 @@ void initInstance() {
 	SDL_Texture *TH = getFontTex(gui_renderer, mainFontName, c2, th, 40);
 	SDL_Texture *TL = getFontTex(gui_renderer, mainFontName, c2, tl, 40);
 
-	mainScene = new stateScene(mainMainScript, mouseOnButton, &mainUD, &treeUD,
-	                           (stateIndex)mainState::UnOn);
+	mainScene = new stateMachine(mainMainScript, mouseOnButton, &mainUD,
+	                             &treeUD, (stateIndex)mainState::UnOn);
 	mainScene->setStateScripts(ss1);
 
 	std::string t3 = "2333333333😄";
@@ -547,8 +547,8 @@ void initInstance() {
 	HelloUD.rend = gui_renderer;
 	HelloUD.eve = gui_event;
 
-	HelloScene = new stateScene(drawHello, HelloEvent, &HelloUD, &treeUD,
-	                            (stateIndex)HelloStateIndex::Hello);
+	HelloScene = new stateMachine(drawHello, HelloEvent, &HelloUD, &treeUD,
+	                              (stateIndex)HelloStateIndex::Hello);
 	// if (!f1 || !f2) {
 	// 	SDL_Log("Fuck");
 	// }
@@ -606,7 +606,8 @@ void initInstance() {
 	// mainScene->setReset(MainRS);
 	// HelloScene->setReset(HelloRS);
 	treeUD.sv = {mainScene, HelloScene};
-	SceneController = new stateScene(sceneShow, treeEvent, &treeUD, nullptr, 0);
+	SceneController =
+	    new stateMachine(sceneShow, treeEvent, &treeUD, nullptr, 0);
 	SceneController->setTable(treeTable);
 	SceneController->setStateScripts(treeSS);
 

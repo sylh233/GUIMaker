@@ -1,7 +1,6 @@
+#include <GUI.h>
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
-#include <gui.h>
-#include <gui_menu.h>
 #include <instance.h>
 #include <main.h>
 #include <string>
@@ -26,7 +25,7 @@ void state1(double mouse_x, double mouse_y);
 //
 
 //
-using namespace gui;
+using namespace GUI;
 
 int main(int argc, char *argv[]) {
 	if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO)) {
@@ -140,7 +139,7 @@ int init() {
 
 void state1(double x, double y) {
 	std::string text = "Hello 世界";
-	gui::Point p{x, y};
+	GUI::Point p{x, y};
 	SDL_FRect r1 = genRect(p, 200, text.size());
 	SDL_Color c = {0xff, 0x00, 0x00, 0xff};
 	SDL_Texture *t1 = getFontTex(rend, mainFontName, c, text, 28);

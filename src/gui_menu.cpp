@@ -1,6 +1,6 @@
-#include <gui_menu.h>
+#include <GUI_Menu.h>
 
-namespace gui {
+namespace GUI {
 Button::Button(SDL_FRect *pos, const std::string t, buttonMode mode,
                float size) {
 	userdata.buttonPos = *(pos);
@@ -133,7 +133,7 @@ void Button::createButton() {
 	                       {idleToUnon, nullptr, OnToDown, nullptr},
 	                       {idleToUnon, nullptr, nullptr, buttonUp}};
 
-	buttonScene = new stateScene(drawSc, eve, (void *)&userdata, odp, 0);
+	buttonScene = new stateMachine(drawSc, eve, (void *)&userdata, odp, 0);
 	buttonScene->setStateScripts(sS);
 	buttonScene->setTable(sT);
 }
@@ -147,4 +147,4 @@ Button::~Button() {
 	delete buttonScene;
 }
 
-}; // namespace gui
+}; // namespace GUI

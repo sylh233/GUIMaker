@@ -1,11 +1,11 @@
-#ifndef GUI_MENU
-#define GUI_MENU
+#ifndef GUI_MENU_H
+#define GUI_MENU_H
 
+#include <GUI_FSM.h>
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
-#include <gui.h>
 
-namespace gui {
+namespace GUI {
 
 enum buttonMode {
 	GUI_BUTTON_MODE_ACT_WHEN_UP,    // 抬起时响应
@@ -39,7 +39,7 @@ typedef struct buttonTheme buttonTheme;
 
 class Button {
   private:
-	stateScene *buttonScene;
+	stateMachine *buttonScene;
 	buttonData userdata;
 	buttonTheme theme;
 	void *odp = nullptr;        // outDataPointer
@@ -56,6 +56,6 @@ class Button {
 	void run();
 	~Button();
 };
-}; // namespace gui
+}; // namespace GUI
 
 #endif

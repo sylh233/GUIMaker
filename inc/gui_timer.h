@@ -1,10 +1,9 @@
-#ifndef GUI_TIMER
-#define GUI_TIMER
+#ifndef GUI_TIMER_H
+#define GUI_TIMER_H
 
 #include <chrono>
-#include <gui.h>
 
-namespace gui {
+namespace GUI {
 class Timer {
   private:
 	std::chrono::steady_clock::time_point point;
@@ -17,6 +16,6 @@ class Timer {
 	bool elapse();
 	~Timer() = default;
 };
-} // namespace gui
+} // namespace GUI
 
 #endif

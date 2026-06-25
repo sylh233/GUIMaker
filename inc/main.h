@@ -1,7 +1,7 @@
 #ifndef MAIN
 #define MAIN
 
-#include <gui.h>
+#include <GUI.h>
 
 extern SDL_Renderer *rend;
 extern SDL_Event eve;
